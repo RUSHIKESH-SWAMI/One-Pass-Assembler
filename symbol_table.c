@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "symbol_table.h"
 
 #define MAX_SYMBOLS 100
@@ -39,4 +40,28 @@ void addForwardReference(char *name, int loc) {
     newRef->patchAddr = loc;
     newRef->next = head;
     head = newRef;
+}
+
+void resolveForwardReferences(char *name, int symbolAddress, FILE *outputFile) {
+    struct ForwardRef *current = head;
+    struct ForwardRef *prev = NULL;
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            // Write patch record
+            fprintf(outputFile, "T^%06X^02^%04X\n", current->patchAddr, symbolAddress);
+            
+            // Remove node from linked list
+            struct ForwardRef *temp = current;
+            if (prev == NULL) {
+                head = current->next;
+            } else {
+                prev->next = current->next;
+            }
+            current = current->next;
+            free(temp);
+        } else {
+            prev = current;
+            current = current->next;
+        }
+    }
 }
